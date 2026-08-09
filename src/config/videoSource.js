@@ -215,3 +215,15 @@ export function getAllVideoSources(
     )
     .filter(Boolean);
 }
+
+
+/**
+ * Get all configured video sources.
+ * Alias used by the Watch page source selector.
+ */
+export function getVideoSources() {
+  return Object.entries(SOURCES).map(([id, source]) => ({
+    id,
+    name: source.name,
+  }))
+}
