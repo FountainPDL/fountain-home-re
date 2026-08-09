@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
 import { ArrowLeft, Film, Youtube, ChevronDown, Settings } from "lucide-react"
 import { useTMDB } from "../hooks/useTMDB"
@@ -23,33 +23,19 @@ export default function Watch() {
 
   const { addView } = useRecentlyViewed()
 
-  const sources = useMemo(() => getVideoSources(), [])
-
   const [selectedSource, setSelectedSource] = useState(() => {
     try {
-      return localStorage.getItem("fountain-home-video-source") ||
+      return (
+        localStorage.getItem("fountain-home-video-source") ||
         DEFAULT_VIDEO_SOURCE
+      )
     } catch {
       return DEFAULT_VIDEO_SOURCE
     }
   })
 
-  useEffect(() => {
-    if (!sources.some((source) => source.id === selectedSource)) {
-      setSelectedSource(DEFAULT_VIDEO_SOURCE)
-    }
-  }, [sources, selectedSource])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "fountain-home-video-source",
-        selectedSource
-      )
-    } catch {
-      // Ignore unavailable storage.
-    }
-  }, [selectedSource])
+  // Get sources before any conditional return.
+  const sources = getVideoSources()
 
   useEffect(() => {
     if (data) {
@@ -66,6 +52,18 @@ export default function Watch() {
   }, [data])
 
   useEffect(() => {
+    try {
+      localStorage.setItem(
+        "fountain-home-video-source",
+        selectedSource
+      )
+    } catch {
+      // Ignore unavailable storage.
+    }
+  }, [selectedSource])
+
+  // Automatically request landscape when fullscreen is entered.
+  useEffect(() => {
     const handleFullscreenChange = async () => {
       if (document.fullscreenElement) {
         try {
@@ -73,7 +71,7 @@ export default function Watch() {
             await screen.orientation.lock("landscape")
           }
         } catch {
-          // Browser does not allow orientation locking.
+          // Orientation locking is browser dependent.
         }
       } else {
         try {
@@ -146,6 +144,7 @@ export default function Watch() {
 
   return (
     <div className="min-h-screen pt-16">
+
       <div className="px-4 md:px-8 py-4">
         <Link
           to={`/${mediaType}/${id}`}
@@ -158,8 +157,8 @@ export default function Watch() {
 
       <div className="px-4 md:px-8">
 
-        {/* Source controls */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        {/* SOURCE SWITCHER */}
+        <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <p className="text-xs uppercase tracking-wider text-white/40">
               Streaming source
@@ -178,10 +177,7 @@ export default function Watch() {
               aria-label="Select video source"
             >
               {sources.map((item) => (
-                <option
-                  key={item.id}
-                  value={item.id}
-                >
+                <option key={item.id} value={item.id}>
                   {item.name}
                 </option>
               ))}
@@ -191,7 +187,7 @@ export default function Watch() {
           </div>
         </div>
 
-        {/* Player */}
+        {/* PLAYER */}
         <div
           id="fountain-player"
           className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-bg-border"
@@ -237,8 +233,7 @@ export default function Watch() {
                   </p>
 
                   <p className="text-sm text-white/50 max-w-md mt-1">
-                    Select another source above or configure a source in
-                    the video source configuration.
+                    Select another source above.
                   </p>
                 </div>
 
@@ -258,7 +253,7 @@ export default function Watch() {
           )}
         </div>
 
-        {/* Title */}
+        {/* TITLE + SETTINGS */}
         <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-xl md:text-2xl font-bold">
@@ -277,7 +272,7 @@ export default function Watch() {
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-surface2 border border-bg-border text-white/70 hover:text-white hover:border-brand-purple transition-colors text-sm"
           >
             <Settings className="w-4 h-4" />
-            Player Settings
+            Settings
           </Link>
         </div>
 
@@ -295,6 +290,7 @@ export default function Watch() {
         {mediaType === "movie" && (
           <div className="mb-10" />
         )}
+
       </div>
     </div>
   )
