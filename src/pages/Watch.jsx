@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, Link } from "react-router-dom"
-import { ArrowLeft, Film, Youtube, Maximize } from "lucide-react"
+import { ArrowLeft, Film, Youtube, ChevronDown, Settings } from "lucide-react"
 import { useTMDB } from "../hooks/useTMDB"
 import { getDetails, getTrailerKey } from "../lib/tmdb"
 import { backdropUrl } from "../config/tmdb"
@@ -12,16 +12,18 @@ import {
 import { useRecentlyViewed } from "../hooks/useRecentlyViewed"
 import ImageWithFallback from "../components/ImageWithFallback"
 import EpisodeSelector from "../components/EpisodeSelector"
-import SourceSelector from "../components/SourceSelector"
-import RedirectBlocker from "../components/RedirectBlocker"
 
 export default function Watch() {
   const { mediaType, id, season, episode } = useParams()
+
   const { data, loading } = useTMDB(
     () => getDetails(mediaType, id),
     [mediaType, id]
   )
+
   const { addView } = useRecentlyViewed()
+
+  const sources = useMemo(() => getVideoSources(), [])
 
   const [selectedSource, setSelectedSource] = useState(() => {
     try {
@@ -31,6 +33,23 @@ export default function Watch() {
       return DEFAULT_VIDEO_SOURCE
     }
   })
+
+  useEffect(() => {
+    if (!sources.some((source) => source.id === selectedSource)) {
+      setSelectedSource(DEFAULT_VIDEO_SOURCE)
+    }
+  }, [sources, selectedSource])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "fountain-home-video-source",
+        selectedSource
+      )
+    } catch {
+      // Ignore unavailable storage.
+    }
+  }, [selectedSource])
 
   useEffect(() => {
     if (data) {
@@ -47,22 +66,6 @@ export default function Watch() {
   }, [data])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        "fountain-home-video-source",
-        selectedSource
-      )
-    } catch {
-      // Storage may be unavailable in private browsing.
-    }
-  }, [selectedSource])
-
-  /*
-   * When the player enters fullscreen, request landscape orientation.
-   * Android browsers that support Screen Orientation API will rotate
-   * automatically. Browsers that do not support it simply remain unchanged.
-   */
-  useEffect(() => {
     const handleFullscreenChange = async () => {
       if (document.fullscreenElement) {
         try {
@@ -70,7 +73,7 @@ export default function Watch() {
             await screen.orientation.lock("landscape")
           }
         } catch {
-          // Orientation locking is not supported by every browser.
+          // Browser does not allow orientation locking.
         }
       } else {
         try {
@@ -78,7 +81,7 @@ export default function Watch() {
             screen.orientation.unlock()
           }
         } catch {
-          // Ignore unsupported orientation APIs.
+          // Ignore unsupported browsers.
         }
       }
     }
@@ -93,14 +96,6 @@ export default function Watch() {
         "fullscreenchange",
         handleFullscreenChange
       )
-
-      try {
-        if (screen.orientation?.unlock) {
-          screen.orientation.unlock()
-        }
-      } catch {
-        // Ignore unsupported orientation APIs.
-      }
     }
   }, [])
 
@@ -123,11 +118,6 @@ export default function Watch() {
   const title = data.title || data.name
   const trailerKey = getTrailerKey(data)
 
-  const sources = useMemo(
-    () => getVideoSources(),
-    []
-  )
-
   const source = getVideoSource(
     mediaType,
     id,
@@ -136,18 +126,26 @@ export default function Watch() {
     selectedSource
   )
 
-  const currentSourceName =
-    sources.find((item) => item.id === selectedSource)?.name ||
-    "Peachify"
+  const currentSource =
+    sources.find((item) => item.id === selectedSource)
 
-  const handleSourceChange = (sourceId) => {
-    setSelectedSource(sourceId)
+  const handleSourceChange = (event) => {
+    const nextSource = event.target.value
+
+    setSelectedSource(nextSource)
+
+    try {
+      localStorage.setItem(
+        "fountain-home-video-source",
+        nextSource
+      )
+    } catch {
+      // Ignore unavailable storage.
+    }
   }
 
   return (
     <div className="min-h-screen pt-16">
-      <RedirectBlocker />
-
       <div className="px-4 md:px-8 py-4">
         <Link
           to={`/${mediaType}/${id}`}
@@ -159,12 +157,48 @@ export default function Watch() {
       </div>
 
       <div className="px-4 md:px-8">
+
+        {/* Source controls */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-white/40">
+              Streaming source
+            </p>
+
+            <p className="text-sm text-white/70 mt-1">
+              {currentSource?.name || "Peachify"}
+            </p>
+          </div>
+
+          <div className="relative">
+            <select
+              value={selectedSource}
+              onChange={handleSourceChange}
+              className="appearance-none min-w-[190px] bg-bg-surface2 border border-bg-border text-white rounded-lg pl-4 pr-10 py-2.5 text-sm outline-none focus:border-brand-purple transition-colors"
+              aria-label="Select video source"
+            >
+              {sources.map((item) => (
+                <option
+                  key={item.id}
+                  value={item.id}
+                >
+                  {item.name}
+                </option>
+              ))}
+            </select>
+
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Player */}
         <div
           id="fountain-player"
           className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-bg-border"
         >
           {source?.type === "video" && (
             <video
+              key={source.src}
               src={source.src}
               controls
               autoPlay
@@ -178,13 +212,10 @@ export default function Watch() {
               key={`${selectedSource}-${mediaType}-${id}-${season || ""}-${episode || ""}`}
               src={source.src}
               className="w-full h-full border-0"
-              allow="autoplay; encrypted-media; fullscreen; picture-in-picture; web-share"
+              allow="autoplay; encrypted-media; fullscreen; picture-in-picture; web-share; orientation-lock"
               allowFullScreen
-              webkitallowfullscreen="true"
-              mozallowfullscreen="true"
-              sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-same-origin allow-scripts"
+              title={`${title} — ${currentSource?.name || "Video"}`}
               referrerPolicy="no-referrer"
-              title={`${title} — ${currentSourceName}`}
             />
           )}
 
@@ -202,16 +233,12 @@ export default function Watch() {
 
                 <div>
                   <p className="font-semibold text-white/80">
-                    No video source connected yet
+                    No video source connected
                   </p>
 
                   <p className="text-sm text-white/50 max-w-md mt-1">
-                    The player is wired up and ready — add a source you
-                    have the rights to in{" "}
-                    <code className="bg-white/10 px-1.5 py-0.5 rounded text-xs">
-                      src/config/videoSource.js
-                    </code>
-                    .
+                    Select another source above or configure a source in
+                    the video source configuration.
                   </p>
                 </div>
 
@@ -231,6 +258,7 @@ export default function Watch() {
           )}
         </div>
 
+        {/* Title */}
         <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-xl md:text-2xl font-bold">
@@ -244,13 +272,13 @@ export default function Watch() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <SourceSelector
-              sources={sources}
-              selected={selectedSource}
-              onChange={handleSourceChange}
-            />
-          </div>
+          <Link
+            to="/settings"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-surface2 border border-bg-border text-white/70 hover:text-white hover:border-brand-purple transition-colors text-sm"
+          >
+            <Settings className="w-4 h-4" />
+            Player Settings
+          </Link>
         </div>
 
         {mediaType === "tv" && data.seasons && (
