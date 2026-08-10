@@ -12,6 +12,7 @@ import {
 import { useRecentlyViewed } from "../hooks/useRecentlyViewed"
 import ImageWithFallback from "../components/ImageWithFallback"
 import EpisodeSelector from "../components/EpisodeSelector"
+import { useRedirectGuard } from "../hooks/useRedirectGuard"
 
 export default function Watch() {
   const { mediaType, id, season, episode } = useParams()
@@ -22,6 +23,9 @@ export default function Watch() {
   )
 
   const { addView } = useRecentlyViewed()
+
+  // Protect the watch page from provider redirect attempts.
+  useRedirectGuard(true)
 
   const [selectedSource, setSelectedSource] = useState(() => {
     try {
@@ -156,6 +160,14 @@ export default function Watch() {
       </div>
 
       <div className="px-4 md:px-8">
+
+        {/* REDIRECT PROTECTION + SOURCE SWITCHER */}
+        <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-xs text-white/45">
+            <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.7)]" />
+            Redirect protection active
+          </div>
+        </div>
 
         {/* SOURCE SWITCHER */}
         <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
