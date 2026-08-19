@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
-import { ArrowLeft, Film, Youtube, X } from "lucide-react"
+import { ArrowLeft, Film, Youtube, X, Maximize, Minimize, Play, Pause } from "lucide-react"
 import { useTMDB } from "../hooks/useTMDB"
 import { getDetails, getTrailerKey } from "../lib/tmdb"
 import { backdropUrl } from "../config/tmdb"
@@ -32,8 +32,11 @@ export default function Watch() {
   const { getProgress, saveProgress, removeProgress } = useContinueWatching()
   const { settings } = useSettings()
   const videoRef = useRef(null)
+  const playerContainerRef = useRef(null)
   const lastSaveRef = useRef(0)
   const [upNext, setUpNext] = useState(null) // { season, episode, secondsLeft } while counting down
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   // Protects the app from provider redirect/popup attempts while watching.
   useRedirectGuard(true)
@@ -114,6 +117,42 @@ export default function Watch() {
     return () => clearTimeout(t)
   }, [upNext, id, navigate])
 
+  // Fullscreens the player CONTAINER, not the video/iframe element directly —
+  // this works identically for a native <video> or a third-party <iframe>,
+  // since it's a parent-page DOM action that doesn't depend on what's
+  // rendered inside. That's what makes it "universal" rather than a
+  // per-source hack.
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement))
+    document.addEventListener("fullscreenchange", onFsChange)
+    document.addEventListener("webkitfullscreenchange", onFsChange)
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange)
+      document.removeEventListener("webkitfullscreenchange", onFsChange)
+    }
+  }, [])
+
+  const toggleFullscreen = () => {
+    const el = playerContainerRef.current
+    if (!el) return
+    const current = document.fullscreenElement || document.webkitFullscreenElement
+    if (current) {
+      ;(document.exitFullscreen || document.webkitExitFullscreen)?.call(document)
+    } else {
+      ;(el.requestFullscreen || el.webkitRequestFullscreen)?.call(el)
+    }
+  }
+
+  // Only ever wired to a real <video> element's own play()/pause() — there
+  // is no cross-origin way to send play/pause into an arbitrary iframe
+  // embed, so this stays disabled rather than pretending to work for one.
+  const togglePlayPause = () => {
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) v.play()
+    else v.pause()
+  }
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-ink/50">Loading…</div>
   }
@@ -133,13 +172,36 @@ export default function Watch() {
       </div>
 
       <div className="px-4 md:px-8">
-        <div className="mb-3 flex items-center gap-2 text-xs text-ink/45">
-          <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.7)]" />
-          Redirect protection active
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-ink/45">
+            <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.7)]" />
+            Redirect protection active
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={togglePlayPause}
+              disabled={source?.type !== "video"}
+              title={source?.type !== "video" ? "Play/pause only works with a direct video source" : isPlaying ? "Pause" : "Play"}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-bg-surface2 border border-bg-border text-ink hover:bg-bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={toggleFullscreen}
+              disabled={!source}
+              title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-bg-surface2 border border-bg-border text-ink hover:bg-bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
         <div
           id="fountain-player"
+          ref={playerContainerRef}
           className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-bg-border"
         >
           {source?.type === "video" && (
@@ -153,6 +215,8 @@ export default function Watch() {
               onLoadedMetadata={handleLoadedMetadata}
               onTimeUpdate={handleTimeUpdate}
               onEnded={handleEnded}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
               className="w-full h-full"
             />
           )}
@@ -190,7 +254,7 @@ export default function Watch() {
                   </p>
                 </div>
                 {trailerKey && (
-                  <a
+                  
                     href={`https://www.youtube.com/watch?v=${trailerKey}`}
                     target="_blank"
                     rel="noreferrer"
