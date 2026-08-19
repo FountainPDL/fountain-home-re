@@ -17,7 +17,7 @@ export default function EpisodeSelector({ seasons, tmdbId, currentSeason, curren
   return (
     <div className="bg-bg-surface border border-bg-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <h3 className="font-semibold">Episodes</h3>
+        <h3 className="font-semibold text-ink">Episodes</h3>
         <div className="relative">
           <select
             value={season}
@@ -26,7 +26,7 @@ export default function EpisodeSelector({ seasons, tmdbId, currentSeason, curren
               setSeason(s)
               goTo(s, 1)
             }}
-            className="appearance-none bg-bg-surface2 border border-bg-border rounded-lg pl-3 pr-8 py-1.5 text-sm outline-none focus:border-brand-purple/60"
+            className="appearance-none bg-bg-surface2 border border-bg-border text-ink rounded-lg pl-3 pr-8 py-1.5 text-sm outline-none focus:border-brand-purple/60"
           >
             {validSeasons.map((s) => (
               <option key={s.season_number} value={s.season_number}>
@@ -34,7 +34,7 @@ export default function EpisodeSelector({ seasons, tmdbId, currentSeason, curren
               </option>
             ))}
           </select>
-          <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/50" />
+          <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50" />
         </div>
       </div>
       <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
@@ -45,7 +45,7 @@ export default function EpisodeSelector({ seasons, tmdbId, currentSeason, curren
             className={`aspect-square rounded-lg text-sm font-medium transition-colors ${
               Number(currentSeason) === season && Number(currentEpisode) === ep
                 ? "bg-brand-purple text-white"
-                : "bg-bg-surface2 hover:bg-bg-border text-white/70"
+                : "bg-bg-surface2 hover:bg-bg-border text-ink/70"
             }`}
           >
             {ep}

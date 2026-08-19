@@ -3,7 +3,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import PosterCard from "./PosterCard"
 import { RowSkeleton } from "./Skeletons"
 
-export default function ContentRow({ title, items, loading, error }) {
+/** getProgress: optional (item) => number|undefined, to show progress bars (Continue Watching row). */
+export default function ContentRow({ title, items, loading, error, getProgress }) {
   const scrollRef = useRef(null)
 
   const scroll = (dir) => {
@@ -17,13 +18,13 @@ export default function ContentRow({ title, items, loading, error }) {
   return (
     <section className="py-4 md:py-6">
       <div className="flex items-center justify-between px-4 md:px-8 mb-3">
-        <h2 className="text-lg md:text-2xl font-bold text-white">{title}</h2>
+        <h2 className="text-lg md:text-2xl font-bold text-ink">{title}</h2>
       </div>
 
       {loading ? (
         <RowSkeleton />
       ) : error ? (
-        <p className="px-4 md:px-8 text-sm text-white/40">Couldn't load this row right now.</p>
+        <p className="px-4 md:px-8 text-sm text-ink/40">Couldn't load this row right now.</p>
       ) : (
         <div className="group/row relative">
           <button
@@ -31,7 +32,7 @@ export default function ContentRow({ title, items, loading, error }) {
             className="hidden md:flex absolute left-0 top-0 bottom-0 z-10 w-10 items-center justify-center bg-gradient-to-r from-bg to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity"
             aria-label="Scroll left"
           >
-            <ChevronLeft className="w-8 h-8" />
+            <ChevronLeft className="w-8 h-8 text-ink" />
           </button>
 
           <div
@@ -40,7 +41,7 @@ export default function ContentRow({ title, items, loading, error }) {
           >
             {items.map((item) => (
               <div key={`${item.media_type}-${item.id}`} className="flex-shrink-0 w-[140px] sm:w-[170px] md:w-[190px] snap-start">
-                <PosterCard item={item} />
+                <PosterCard item={item} progress={getProgress?.(item)} />
               </div>
             ))}
           </div>
@@ -50,7 +51,7 @@ export default function ContentRow({ title, items, loading, error }) {
             className="hidden md:flex absolute right-0 top-0 bottom-0 z-10 w-10 items-center justify-center bg-gradient-to-l from-bg to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity"
             aria-label="Scroll right"
           >
-            <ChevronRight className="w-8 h-8" />
+            <ChevronRight className="w-8 h-8 text-ink" />
           </button>
         </div>
       )}

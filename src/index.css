@@ -2,12 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Dark theme (default) */
+  --c-bg: 11 8 18;
+  --c-bg-surface: 22 16 34;
+  --c-bg-surface2: 31 24 48;
+  --c-bg-border: 42 35 56;
+  --c-ink: 255 255 255;
+}
+
+:root[data-theme="light"] {
+  --c-bg: 250 249 252;
+  --c-bg-surface: 255 255 255;
+  --c-bg-surface2: 243 241 247;
+  --c-bg-border: 224 220 233;
+  --c-ink: 17 14 23;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  @apply bg-bg text-white font-sans antialiased;
+  @apply bg-bg text-ink font-sans antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 ::-webkit-scrollbar {
@@ -33,7 +51,7 @@ body {
 }
 
 .text-gradient {
-  background: linear-gradient(90deg, #f87171, #ef4444);
+  background: linear-gradient(90deg, #c084fc, #8a2be2);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

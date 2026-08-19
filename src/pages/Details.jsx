@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
-import { Play, Plus, Check, Star, Clock, Calendar, Film } from "lucide-react"
+import { Play, Plus, Check, Star, Clock, Calendar, Film, Share2 } from "lucide-react"
 import { useTMDB } from "../hooks/useTMDB"
 import { getDetails, getTrailerKey, getCertification } from "../lib/tmdb"
 import { backdropUrl, posterUrl, profileUrl } from "../config/tmdb"
@@ -14,6 +14,7 @@ export default function Details() {
   const { mediaType, id } = useParams()
   const { data, loading, error } = useTMDB(() => getDetails(mediaType, id), [mediaType, id])
   const [showTrailer, setShowTrailer] = useState(false)
+  const [shared, setShared] = useState(false)
   const { isInList, toggle } = useMyList()
   const { addView } = useRecentlyViewed()
 
@@ -26,17 +27,21 @@ export default function Details() {
         name: data.name,
         poster_path: data.poster_path,
       })
+      document.title = `${data.title || data.name} — Fountain Home`
+    }
+    return () => {
+      document.title = "Fountain Home"
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-white/50">Loading…</div>
+    return <div className="min-h-screen flex items-center justify-center text-ink/50">Loading…</div>
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-white/50 px-4 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-ink/50 px-4 text-center">
         <p>Couldn't load this title. {error}</p>
         <Link to="/" className="text-brand-purple underline">
           Back home
@@ -53,6 +58,25 @@ export default function Details() {
   const cast = (data.credits?.cast || []).slice(0, 12)
   const similar = (data.similar?.results || []).map((s) => ({ ...s, media_type: mediaType }))
   const inList = isInList(data.id, mediaType)
+
+  const handleShare = async () => {
+    const url = window.location.href
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url })
+        return
+      } catch {
+        // user cancelled or share failed — fall through to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setShared(true)
+      setTimeout(() => setShared(false), 2000)
+    } catch {
+      // clipboard unavailable — nothing more we can do silently
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -80,10 +104,10 @@ export default function Details() {
           </div>
 
           <div className="flex-1 space-y-4 text-center md:text-left">
-            <h1 className="text-2xl md:text-4xl font-extrabold text-balance">{title}</h1>
-            {data.tagline && <p className="text-white/50 italic">{data.tagline}</p>}
+            <h1 className="text-2xl md:text-4xl font-extrabold text-balance text-ink">{title}</h1>
+            {data.tagline && <p className="text-ink/50 italic">{data.tagline}</p>}
 
-            <div className="flex flex-wrap justify-center md:justify-start items-center gap-2.5 text-sm">
+            <div className="flex flex-wrap justify-center md:justify-start items-center gap-2.5 text-sm text-ink">
               {data.vote_average > 0 && (
                 <span className="flex items-center gap-1 bg-bg-surface2 rounded-full px-3 py-1">
                   <Star className="w-4 h-4 fill-brand-green text-brand-green" /> {data.vote_average.toFixed(1)}
@@ -100,7 +124,7 @@ export default function Details() {
                 </span>
               )}
               {certification && (
-                <span className="bg-brand-red/80 rounded-full px-3 py-1 font-semibold">{certification}</span>
+                <span className="bg-brand-red/80 text-white rounded-full px-3 py-1 font-semibold">{certification}</span>
               )}
               {mediaType === "tv" && data.number_of_seasons && (
                 <span className="flex items-center gap-1 bg-bg-surface2 rounded-full px-3 py-1">
@@ -122,7 +146,7 @@ export default function Details() {
               </div>
             )}
 
-            <p className="text-white/70 leading-relaxed max-w-2xl mx-auto md:mx-0">{data.overview}</p>
+            <p className="text-ink/70 leading-relaxed max-w-2xl mx-auto md:mx-0">{data.overview}</p>
 
             <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-2">
               <Link
@@ -134,7 +158,7 @@ export default function Details() {
               {trailerKey && (
                 <button
                   onClick={() => setShowTrailer(true)}
-                  className="flex items-center gap-2 bg-bg-surface2 border border-bg-border font-semibold px-5 py-2.5 rounded-lg hover:bg-bg-surface transition-colors"
+                  className="flex items-center gap-2 bg-bg-surface2 border border-bg-border text-ink font-semibold px-5 py-2.5 rounded-lg hover:bg-bg-surface transition-colors"
                 >
                   <Film className="w-5 h-5" /> Trailer
                 </button>
@@ -150,10 +174,16 @@ export default function Details() {
                     vote_average: data.vote_average,
                   })
                 }
-                className="flex items-center gap-2 bg-bg-surface2 border border-bg-border font-semibold px-5 py-2.5 rounded-lg hover:bg-bg-surface transition-colors"
+                className="flex items-center gap-2 bg-bg-surface2 border border-bg-border text-ink font-semibold px-5 py-2.5 rounded-lg hover:bg-bg-surface transition-colors"
               >
                 {inList ? <Check className="w-5 h-5 text-brand-green" /> : <Plus className="w-5 h-5" />}
                 {inList ? "In My List" : "My List"}
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 bg-bg-surface2 border border-bg-border text-ink font-semibold px-5 py-2.5 rounded-lg hover:bg-bg-surface transition-colors"
+              >
+                <Share2 className="w-5 h-5" /> {shared ? "Link copied!" : "Share"}
               </button>
             </div>
           </div>
@@ -161,7 +191,7 @@ export default function Details() {
 
         {cast.length > 0 && (
           <div className="mt-12">
-            <h2 className="text-xl font-bold mb-4">Cast</h2>
+            <h2 className="text-xl font-bold mb-4 text-ink">Cast</h2>
             <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
               {cast.map((person) => (
                 <div key={person.id} className="flex-shrink-0 w-24 text-center">
@@ -173,8 +203,8 @@ export default function Details() {
                       fallbackClassName="w-full h-full"
                     />
                   </div>
-                  <p className="text-xs font-medium mt-2 line-clamp-1">{person.name}</p>
-                  <p className="text-xs text-white/40 line-clamp-1">{person.character}</p>
+                  <p className="text-xs font-medium mt-2 line-clamp-1 text-ink">{person.name}</p>
+                  <p className="text-xs text-ink/40 line-clamp-1">{person.character}</p>
                 </div>
               ))}
             </div>

@@ -6,6 +6,17 @@
     <link rel="apple-touch-icon" href="./app-icon-dark.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <meta name="theme-color" content="#0B0812" />
+    <script>
+      try {
+        var t = localStorage.getItem("fh_theme");
+        if (t !== "light" && t !== "dark") {
+          t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    </script>
     <meta name="description" content="Fountain Home — discover trending, popular, and top-rated movies & TV shows." />
 
     <meta property="og:title" content="Fountain Home" />

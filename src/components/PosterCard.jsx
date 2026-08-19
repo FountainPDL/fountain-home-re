@@ -3,7 +3,8 @@ import { Star, Play } from "lucide-react"
 import ImageWithFallback from "./ImageWithFallback"
 import { posterUrl } from "../config/tmdb"
 
-export default function PosterCard({ item }) {
+/** progress: optional 0-100, renders a Continue Watching style progress bar. */
+export default function PosterCard({ item, progress }) {
   const title = item.title || item.name || "Untitled"
   const year = (item.release_date || item.first_air_date || "").split("-")[0]
   const mediaType = item.media_type || (item.title ? "movie" : "tv")
@@ -29,10 +30,15 @@ export default function PosterCard({ item }) {
             {rating}
           </div>
         )}
+        {typeof progress === "number" && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/60">
+            <div className="h-full bg-brand-red" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+          </div>
+        )}
       </div>
       <div className="mt-2">
-        <h3 className="text-sm font-medium text-white/90 line-clamp-1">{title}</h3>
-        {year && <p className="text-xs text-white/50">{year}</p>}
+        <h3 className="text-sm font-medium text-ink/90 line-clamp-1">{title}</h3>
+        {year && <p className="text-xs text-ink/50">{year}</p>}
       </div>
     </Link>
   )

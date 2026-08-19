@@ -33,13 +33,26 @@ export default function Browse({ mediaType }) {
   const [items, setItems] = useState([])
 
   const { data: genres } = useTMDB(() => getGenres(mediaType), [mediaType])
-
   const sortOption = SORTS[mediaType].find((s) => s.key === sortKey) || SORTS[mediaType][0]
 
+  // Route-driven reset (switching /movies <-> /tv)
   useEffect(() => {
     setItems([])
     setPage(1)
-  }, [mediaType, sortKey, genreId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaType])
+
+  const changeSort = (key) => {
+    setItems([])
+    setPage(1)
+    setParams(genreId ? { sort: key, genre: genreId } : { sort: key })
+  }
+
+  const changeGenre = (id) => {
+    setItems([])
+    setPage(1)
+    setParams({ sort: sortKey, genre: String(id) })
+  }
 
   const { data, loading } = useTMDB(
     () => (genreId ? discoverByGenre(mediaType, genreId, page) : sortOption.fetch(page)),
@@ -53,17 +66,17 @@ export default function Browse({ mediaType }) {
 
   return (
     <div className="min-h-screen pt-24 px-4 md:px-8 pb-16">
-      <h1 className="text-2xl md:text-3xl font-bold mb-6">{mediaType === "tv" ? "TV Shows" : "Movies"}</h1>
+      <h1 className="text-2xl md:text-3xl font-bold mb-6 text-ink">{mediaType === "tv" ? "TV Shows" : "Movies"}</h1>
 
       <div className="flex flex-wrap gap-2 mb-6">
         {SORTS[mediaType].map((s) => (
           <button
             key={s.key}
-            onClick={() => setParams(genreId ? { sort: s.key, genre: genreId } : { sort: s.key })}
+            onClick={() => changeSort(s.key)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               sortKey === s.key && !genreId
-                ? "bg-brand-purple border-brand-purple"
-                : "border-bg-border text-white/60 hover:text-white"
+                ? "bg-brand-purple border-brand-purple text-white"
+                : "border-bg-border text-ink/60 hover:text-ink"
             }`}
           >
             {s.label}
@@ -72,11 +85,11 @@ export default function Browse({ mediaType }) {
         {genres?.map((g) => (
           <button
             key={g.id}
-            onClick={() => setParams({ sort: sortKey, genre: String(g.id) })}
+            onClick={() => changeGenre(g.id)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               String(genreId) === String(g.id)
-                ? "bg-brand-green/80 border-brand-green"
-                : "border-bg-border text-white/60 hover:text-white"
+                ? "bg-brand-green/80 border-brand-green text-white"
+                : "border-bg-border text-ink/60 hover:text-ink"
             }`}
           >
             {g.name}
@@ -91,13 +104,13 @@ export default function Browse({ mediaType }) {
         {loading && Array.from({ length: 6 }).map((_, i) => <PosterSkeleton key={`s${i}`} />)}
       </div>
 
-      {!loading && items.length === 0 && <p className="text-white/40 text-center py-12">No titles found.</p>}
+      {!loading && items.length === 0 && <p className="text-ink/40 text-center py-12">No titles found.</p>}
 
       {!loading && items.length > 0 && (
         <div className="flex justify-center mt-8">
           <button
             onClick={() => setPage((p) => p + 1)}
-            className="bg-bg-surface2 border border-bg-border hover:bg-bg-surface px-6 py-2.5 rounded-lg font-medium transition-colors"
+            className="bg-bg-surface2 border border-bg-border text-ink hover:bg-bg-surface px-6 py-2.5 rounded-lg font-medium transition-colors"
           >
             Load More
           </button>
