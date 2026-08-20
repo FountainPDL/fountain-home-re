@@ -254,7 +254,7 @@ export default function Watch() {
                   </p>
                 </div>
                 {trailerKey && (
-                  
+                  <a
                     href={`https://www.youtube.com/watch?v=${trailerKey}`}
                     target="_blank"
                     rel="noreferrer"
